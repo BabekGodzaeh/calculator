@@ -34,19 +34,24 @@ jobs:
 
       - name: Package APK
         run: |
+          BUILD_TOOLS=$(ls $ANDROID_HOME/build-tools | sort -V | tail -n 1)
+          echo "Using build-tools: $BUILD_TOOLS"
           cd build
-          aapt package -f -M ../AndroidManifest.xml \
+          $ANDROID_HOME/build-tools/$BUILD_TOOLS/aapt package -f \
+            -M ../AndroidManifest.xml \
             -I $ANDROID_HOME/platforms/android-34/android.jar \
             -F unsigned.apk
           zip -uj unsigned.apk classes.dex
-          zipalign -f 4 unsigned.apk aligned.apk
+          $ANDROID_HOME/build-tools/$BUILD_TOOLS/zipalign -f 4 unsigned.apk aligned.apk
 
       - name: Sign APK
         run: |
+          BUILD_TOOLS=$(ls $ANDROID_HOME/build-tools | sort -V | tail -n 1)
           keytool -genkey -v -keystore build/keystore.jks -alias key -keyalg RSA \
             -keysize 2048 -validity 10000 -storepass 123456 -keypass 123456 \
             -dname "CN=Test"
-          apksigner sign --ks build/keystore.jks --ks-pass pass:123456 \
+          $ANDROID_HOME/build-tools/$BUILD_TOOLS/apksigner sign \
+            --ks build/keystore.jks --ks-pass pass:123456 \
             --out build/calculator.apk build/aligned.apk
 
       - name: Upload APK
