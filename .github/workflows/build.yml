@@ -20,31 +20,24 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Compile Resources
-        run: |
-          mkdir -p build/gen build/classes
-          aapt2 compile --dir res -o build/res.zip
-          aapt2 link -o build/unsigned.apk \
-            -I $ANDROID_HOME/platforms/android-34/android.jar \
-            --manifest AndroidManifest.xml \
-            build/res.zip \
-            --java build/gen
-
       - name: Compile Java
         run: |
+          mkdir -p build/classes
           javac -d build/classes \
             -cp $ANDROID_HOME/platforms/android-34/android.jar \
-            MainActivity.java \
-            build/gen/**/*.java
+            MainActivity.java
 
       - name: Create DEX
         run: |
           d8 --output build/ --lib $ANDROID_HOME/platforms/android-34/android.jar \
             $(find build/classes -name "*.class")
 
-      - name: Package and Align
+      - name: Package APK
         run: |
           cd build
+          aapt package -f -M ../AndroidManifest.xml \
+            -I $ANDROID_HOME/platforms/android-34/android.jar \
+            -F unsigned.apk
           zip -uj unsigned.apk classes.dex
           zipalign -f 4 unsigned.apk aligned.apk
 
